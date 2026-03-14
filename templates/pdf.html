@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF Translator</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body class="blur-background">
+
+<div class="page-box">
+    <h1>📄 PDF Translator & Narrator</h1>
+    <p class="quote">"Turn your documents into multilingual audio."</p>
+
+    <form action="/doc_convert" method="POST" enctype="multipart/form-data">
+        
+        <label><b>Upload Document File:</b></label><br><br>
+        <input type="file" name="doc_file"
+        accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg" required><br><br>
+        
+        <label><b>Select Feature:</b></label><br><br>
+        <select name="feature" required>
+            <option value="translate">Translate</option>
+            <option value="audio">Audio Narration</option>
+            <option value="all">All Features</option>
+        </select><br><br>
+
+        <label><b>Select Output Language:</b></label><br><br>
+        <select name="language" required>
+            <option value="hi">Hindi</option>
+            <option value="ta">Tamil</option>
+            <option value="te">Telugu</option>
+            <option value="kn">Kannada</option>
+            <option value="ml">Malayalam</option>
+            <option value="mr">Marathi</option>
+            <option value="gu">Gujarati</option>
+            <option value="pa">Punjabi</option>
+            <option value="bn">Bengali</option>
+            <option value="ur">Urdu</option>
+        </select><br><br>
+
+        <button type="submit" class="main-btn">Convert PDF</button>
+    </form>
+   {% if original_text %}
+<div class="result-box">
+    <h2>📌 Output Result</h2>
+
+    <h3>Original Text:</h3>
+    <p>{{ original_text }}</p>
+
+    {% if translated_text %}
+    <h3>Translated Text:</h3>
+    <p>{{ translated_text }}</p>
+    {% endif %}
+
+    {% if audio_file %}
+    <h3>Output Audio:</h3>
+    <audio controls>
+        <source src="/static/{{ audio_file }}" type="audio/mp3">
+    </audio>
+    {% endif %}
+</div>
+{% endif %}
+
+    <br><br>
+    <a href="/"><button class="back-btn">⬅ Back to Home</button></a>
+</div>
+
+</body>
+</html>

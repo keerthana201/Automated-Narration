@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Translator</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body class="blur-background">
+
+<div class="page-box">
+    <h1>🎙 Voice Translator</h1>
+    <p class="quote">"Speak in your language, listen in another."</p>
+
+    <label><b>Select Output Language:</b></label><br><br>
+    <select id="voiceLanguage">
+        <option value="hi">Hindi</option>
+        <option value="ta">Tamil</option>
+        <option value="te">Telugu</option>
+        <option value="kn">Kannada</option>
+        <option value="ml">Malayalam</option>
+        <option value="mr">Marathi</option>
+        <option value="gu">Gujarati</option>
+        <option value="pa">Punjabi</option>
+        <option value="bn">Bengali</option>
+        <option value="ur">Urdu</option>
+    </select>
+
+    <br><br>
+
+    <div class="btn-group">
+        <button id="startBtn" class="main-btn">Start Recording</button>
+        <button id="stopBtn" class="stop-btn" disabled>Stop Recording</button>
+    </div>
+
+    <p id="status"></p>
+    <p id="status"></p>
+
+<!-- ✅ OUTPUT RESULT SECTION -->
+{% if original_text %}
+<div class="result-box">
+    <h2>📌 Output Result</h2>
+
+    <h3>Original Text:</h3>
+    <p>{{ original_text }}</p>
+
+    <h3>Translated Text:</h3>
+    <p>{{ translated_text }}</p>
+
+    <h3>Output Audio:</h3>
+    <audio controls>
+        <source src="/static/{{ audio_file }}" type="audio/mp3">
+    </audio>
+
+    <br><br>
+
+    <!-- ✅ Convert Again Feature -->
+    <form action="/convert_again" method="POST">
+        <label><b>Convert Same Text into Another Language:</b></label><br><br>
+
+        <select name="new_language" required>
+            <option value="hi">Hindi</option>
+            <option value="ta">Tamil</option>
+            <option value="te">Telugu</option>
+            <option value="kn">Kannada</option>
+            <option value="ml">Malayalam</option>
+            <option value="mr">Marathi</option>
+            <option value="gu">Gujarati</option>
+            <option value="pa">Punjabi</option>
+            <option value="bn">Bengali</option>
+            <option value="ur">Urdu</option>
+        </select>
+
+        <br><br>
+        <button type="submit" class="main-btn">Convert Again</button>
+    </form>
+</div>
+{% endif %}
+
+
+    <br><br>
+    <a href="/"><button class="back-btn">⬅ Back to Home</button></a>
+</div>
+
+<script>
+let mediaRecorder;
+let audioChunks = [];
+
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const statusText = document.getElementById("status");
+
+startBtn.onclick = async () => {
+    audioChunks = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = event => {
+        audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstart = () => {
+        statusText.innerText = "🎙 Recording started...";
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+    };
+
+    mediaRecorder.onstop = async () => {
+        statusText.innerText = "⏳ Processing audio... Please wait...";
+
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "recorded_audio.webm");
+        formData.append("language", document.getElementById("voiceLanguage").value);
+
+        const response = await fetch("/voice_convert", {
+            method: "POST",
+            body: formData
+        });
+
+        const resultPage = await response.text();
+        document.open();
+        document.write(resultPage);
+        document.close();
+    };
+
+    mediaRecorder.start();
+};
+
+stopBtn.onclick = () => {
+    mediaRecorder.stop();
+    statusText.innerText = "🛑 Recording stopped!";
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+};
+</script>
+
+</body>
+</html>

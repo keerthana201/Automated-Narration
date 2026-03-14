@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Translator & PDF Narrator</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body id="mainBody">
+
+<!-- HERO SECTION -->
+<div class="hero">
+    <div class="overlay">
+        <div class="hero-content">
+            <h1>🌍 Welcome to Automated Narrator</h1>
+            <p class="quote">" we’ll translate into any Indian language."</p>
+
+            <div class="option-cards">
+                <div class="card" onclick="showVoice()">
+                    <h2>🎙 Voice Mode</h2>
+                    <p>Record your voice and convert it into Indian languages instantly.</p>
+                    <a href="/voice">
+                        <button class="card-btn">Use Voice</button>
+                    </a>
+                </div>
+
+                <div class="card" onclick="showPDF()">
+                    <h2>📄 PDF Mode</h2>
+                    <p>Upload a PDF, translate it and generate narration audio output.</p>
+                    <a href="/pdf">
+                        <button class="card-btn">Use PDF</button>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN SECTION -->
+<div class="container">
+
+    <!-- VOICE MODE -->
+    <div id="voiceSection" class="hidden glass-box">
+        <h2 class="section-title">🎙 Voice Translator Mode</h2>
+
+        <label><b>Select Output Language:</b></label><br><br>
+        <select id="voiceLanguage">
+            <option value="hi">Hindi</option>
+            <option value="ta">Tamil</option>
+            <option value="te">Telugu</option>
+            <option value="kn">Kannada</option>
+            <option value="ml">Malayalam</option>
+            <option value="mr">Marathi</option>
+            <option value="gu">Gujarati</option>
+            <option value="pa">Punjabi</option>
+            <option value="bn">Bengali</option>
+            <option value="ur">Urdu</option>
+        </select>
+
+        <br><br>
+
+        <div class="btn-group">
+            <button id="startBtn" class="main-btn">Start Recording</button>
+            <button id="stopBtn" class="stop-btn" disabled>Stop Recording</button>
+        </div>
+
+        <p id="status"></p>
+    </div>
+
+
+    <!-- PDF MODE -->
+    <div id="pdfSection" class="hidden glass-box">
+        <h2 class="section-title">📄 PDF Narration Mode</h2>
+
+        <form action="/pdf_convert" method="POST" enctype="multipart/form-data">
+            
+            <label><b>Upload PDF File:</b></label><br><br>
+            <input type="file" name="pdf_file" accept=".pdf" required><br><br>
+
+            <label><b>Select Output Language:</b></label><br><br>
+            <select name="language" id="pdfLanguage" required>
+                <option value="hi">Hindi</option>
+                <option value="ta">Tamil</option>
+                <option value="te">Telugu</option>
+                <option value="kn">Kannada</option>
+                <option value="ml">Malayalam</option>
+                <option value="mr">Marathi</option>
+                <option value="gu">Gujarati</option>
+                <option value="pa">Punjabi</option>
+                <option value="bn">Bengali</option>
+                <option value="ur">Urdu</option>
+            </select><br><br>
+
+            <button type="submit" class="main-btn">Convert PDF</button>
+        </form>
+    </div>
+
+
+    <!-- OUTPUT RESULT -->
+    {% if original_text %}
+    <div class="result-box">
+        <h2>📌 Output Result</h2>
+
+        <h3>Original Text:</h3>
+        <p>{{ original_text }}</p>
+
+        <h3>Translated Text:</h3>
+        <p>{{ translated_text }}</p>
+
+        <h3>Output Audio:</h3>
+        <audio controls>
+            <source src="/static/{{ audio_file }}" type="audio/mp3">
+        </audio>
+
+        <br><br>
+        <a href="/static/{{ audio_file }}" download>
+            <button class="main-btn">Download Audio</button>
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+
+
+<script>
+function showVoice() {
+    // ✅ blur background
+    document.getElementById("mainBody").classList.add("blur-background");
+
+    // ✅ show voice section
+    document.getElementById("voiceSection").classList.remove("hidden");
+
+    // ❌ hide pdf section
+    document.getElementById("pdfSection").classList.add("hidden");
+
+    // scroll down automatically
+    window.scrollTo(0, document.body.scrollHeight);
+}
+
+function showPDF() {
+    // ✅ blur background
+    document.getElementById("mainBody").classList.add("blur-background");
+
+    // ✅ show pdf section
+    document.getElementById("pdfSection").classList.remove("hidden");
+
+    // ❌ hide voice section
+    document.getElementById("voiceSection").classList.add("hidden");
+
+    // scroll down automatically
+    window.scrollTo(0, document.body.scrollHeight);
+}
+
+
+// ------------------ VOICE RECORDING SCRIPT ------------------
+
+let mediaRecorder;
+let audioChunks = [];
+
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const statusText = document.getElementById("status");
+
+startBtn.onclick = async () => {
+    audioChunks = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = event => {
+        audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstart = () => {
+        statusText.innerText = "🎙 Recording started...";
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+    };
+
+    mediaRecorder.onstop = async () => {
+        statusText.innerText = "⏳ Processing audio... Please wait...";
+
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "recorded_audio.webm");
+        formData.append("language", document.getElementById("voiceLanguage").value);
+
+        const response = await fetch("/voice_convert", {
+            method: "POST",
+            body: formData
+        });
+
+        const resultPage = await response.text();
+        document.open();
+        document.write(resultPage);
+        document.close();
+    };
+
+    mediaRecorder.start();
+};
+
+stopBtn.onclick = () => {
+    mediaRecorder.stop();
+    statusText.innerText = "🛑 Recording stopped!";
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+};
+</script>
+
+</body>
+</html>
